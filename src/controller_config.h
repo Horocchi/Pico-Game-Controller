@@ -1,8 +1,8 @@
 #ifndef CONTROLLER_CONFIG_H
 #define CONTROLLER_CONFIG_H
 
-#define SW_GPIO_SIZE 11               // Number of switches
-#define LED_GPIO_SIZE 10              // Number of switch LEDs
+#define SW_GPIO_SIZE 7               // Number of switches
+#define LED_GPIO_SIZE 7              // Number of switch LEDs
 #define ENC_GPIO_SIZE 2               // Number of encoders
 #define ENC_PPR 600                   // Encoder PPR
 #define MOUSE_SENS 1                  // Mouse sensitivity multiplier
@@ -14,25 +14,26 @@
 #define WS2812B_LED_ZONES 2           // Number of WS2812B LED Zones
 #define WS2812B_LEDS_PER_ZONE \
   WS2812B_LED_SIZE / WS2812B_LED_ZONES  // Number of LEDs per zone
+#define POT_GPIO_LEFT 26    // Left Potentiometer GPIO pin
+#define POT_GPIO_RIGHT 27   // Right Potentiometer GPIO pin
+#define USE_POTENTIOMETERS true  // Set to true to use potentiometers, false to use rotary encoders
 
 #ifdef PICO_GAME_CONTROLLER_C
 
-// MODIFY KEYBINDS HERE, MAKE SURE LENGTHS MATCH SW_GPIO_SIZE
+//MODIFY KEYBINDS HERE, MAKE SURE LENGTHS MATCH SW_GPIO_SIZE
 const uint8_t SW_KEYCODE[] = {HID_KEY_D, HID_KEY_F, HID_KEY_J, HID_KEY_K,
-                              HID_KEY_C, HID_KEY_M, HID_KEY_A, HID_KEY_B,
-                              HID_KEY_1, HID_KEY_E, HID_KEY_G};
+                              HID_KEY_C, HID_KEY_M, HID_KEY_1};
 const uint8_t SW_GPIO[] = {
-    4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 27,
+    15, 11, 7, 3, 13, 5, 9,
 };
 const uint8_t LED_GPIO[] = {
-    5, 7, 9, 11, 13, 15, 17, 19, 21, 26,
+    14, 10, 6, 2, 12, 4, 8,
 };
-const uint8_t ENC_GPIO[] = {0, 2};      // L_ENC(0, 1); R_ENC(2, 3)
+const uint8_t ENC_GPIO[] = {18, 20};      // L_ENC(0, 1); R_ENC(2, 3)
 const bool ENC_REV[] = {false, false};  // Reverse Encoders
-const uint8_t WS2812B_GPIO = 28;
+const uint8_t WS2812B_GPIO = 22;
 
 #endif
-
 extern bool joy_mode_check;
 
 #endif
