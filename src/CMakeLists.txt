@@ -1,6 +1,7 @@
 add_executable(Pico_Game_Controller
         pico_game_controller.c
-        usb_descriptors.c)
+        usb_descriptors.c
+        ResponsiveAnalogRead.c)
 
 target_include_directories(Pico_Game_Controller PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
@@ -15,7 +16,8 @@ target_link_libraries(Pico_Game_Controller PRIVATE
         tinyusb_board
         hardware_pio
         hardware_dma
-        hardware_irq)
+        hardware_irq
+        hardware_adc)
 
 pico_add_extra_outputs(Pico_Game_Controller)
 
