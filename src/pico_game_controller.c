@@ -15,6 +15,8 @@
 #include "hardware/dma.h"
 #include "hardware/irq.h"
 #include "hardware/pio.h"
+#include "hardware/adc.h" // ADC for potentiometers
+#include "ResponsiveAnalogRead.h" // Smoothing for potentiometers
 #include "pico/multicore.h"
 #include "pico/stdlib.h"
 #include "tusb.h"
@@ -40,6 +42,9 @@ void (*ws2812b_mode)();
 void (*loop_mode)();
 uint16_t (*debounce_mode)();
 bool joy_mode_check = true;
+
+ResponsiveAnalogRead analog_read_left;
+ResponsiveAnalogRead analog_read_right;
 
 union {
   struct {
@@ -109,8 +114,15 @@ void joy_mode() {
       prev_enc_val[i] = enc_val[i];
     }
 
-    report.joy0 = ((double)cur_enc_val[0] / ENC_PULSE) * (UINT8_MAX + 1);
-    report.joy1 = ((double)cur_enc_val[1] / ENC_PULSE) * (UINT8_MAX + 1);
+    if (USE_POTENTIOMETERS) {
+      ResponsiveAnalogRead_update(&analog_read_left);
+      report.joy0 = ResponsiveAnalogRead_getValue(&analog_read_left);
+      ResponsiveAnalogRead_update(&analog_read_right);
+      report.joy1 = ResponsiveAnalogRead_getValue(&analog_read_right);
+    } else {
+        report.joy0 = ((double)cur_enc_val[0] / ENC_PULSE) * (UINT8_MAX + 1);
+        report.joy1 = ((double)cur_enc_val[1] / ENC_PULSE) * (UINT8_MAX + 1);
+    }
 
     tud_hid_n_report(0x00, REPORT_ID_JOYSTICK, &report, sizeof(report));
   }
@@ -141,14 +153,22 @@ void key_mode() {
     } else {
       /*------------- Mouse -------------*/
       // find the delta between previous and current enc_val
-      int delta[ENC_GPIO_SIZE] = {0};
-      for (int i = 0; i < ENC_GPIO_SIZE; i++) {
-        delta[i] = (enc_val[i] - prev_enc_val[i]) * (ENC_REV[i] ? 1 : -1);
-        prev_enc_val[i] = enc_val[i];
-      }
+      if (USE_POTENTIOMETERS) {
+        ResponsiveAnalogRead_update(&analog_read_left);
+        int delta_pot_left = ResponsiveAnalogRead_getValue(&analog_read_left) - report.joy0;
 
-      tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta[0] * MOUSE_SENS,
-                           delta[1] * MOUSE_SENS, 0, 0);
+        ResponsiveAnalogRead_update(&analog_read_right);
+        int delta_pot_right = ResponsiveAnalogRead_getValue(&analog_read_right) - report.joy1;
+
+        tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta_pot_left * MOUSE_SENS, delta_pot_right * MOUSE_SENS, 0, 0);
+      } else {
+          int delta[ENC_GPIO_SIZE] = {0};
+          for (int i = 0; i < ENC_GPIO_SIZE; i++) {
+              delta[i] = (enc_val[i] - prev_enc_val[i]) * (ENC_REV[i] ? 1 : -1);
+              prev_enc_val[i] = enc_val[i];
+          }
+          tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta[0] * MOUSE_SENS, delta[1] * MOUSE_SENS, 0, 0);
+      }
     }
     // Alternate reports
     kbm_report = !kbm_report;
@@ -205,6 +225,12 @@ void init() {
   gpio_init(25);
   gpio_set_dir(25, GPIO_OUT);
   gpio_put(25, 1);
+
+  // Setup Potentiometers
+  if (USE_POTENTIOMETERS) {
+      ResponsiveAnalogRead_begin(&analog_read_left, POT_GPIO_LEFT, true, 0.01);
+      ResponsiveAnalogRead_begin(&analog_read_right, POT_GPIO_RIGHT, true, 0.01);
+  }
 
   // Set up the state machine for encoders
   pio = pio0;
